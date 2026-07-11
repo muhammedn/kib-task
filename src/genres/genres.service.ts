@@ -14,7 +14,9 @@ export class GenresService {
     const cached = await this.cache.get(this.getCacheKey());
     if (cached) return cached;
 
-    const genres = await this.prisma.genre.findMany({ orderBy: { name: 'asc' } });
+    const genres = await this.prisma.genre.findMany({
+      orderBy: { name: 'asc' },
+    });
     await this.cache.set(this.getCacheKey(), genres);
     return genres;
   }

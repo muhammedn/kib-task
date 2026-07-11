@@ -88,8 +88,14 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": { "^(\\.{1,2}/.*)\\.js$": "$1" },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.ts",
+      "!**/*.spec.ts",
+      "!**/*.module.ts",
+      "!**/main.ts",
+      "!**/generated/**",
+      "!**/prisma/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
