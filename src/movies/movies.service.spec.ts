@@ -105,7 +105,7 @@ describe('MoviesService', () => {
 
       await service.findAll({
         search: 'batman',
-        genreId: 28,
+        genre: 'Action',
         page: 2,
         limit: 10,
       });
@@ -114,7 +114,11 @@ describe('MoviesService', () => {
         expect.objectContaining({
           where: {
             title: { contains: 'batman', mode: 'insensitive' },
-            genres: { some: { genreId: 28 } },
+            genres: {
+              some: {
+                genre: { name: { equals: 'Action', mode: 'insensitive' } },
+              },
+            },
           },
           skip: 10,
           take: 10,
@@ -141,11 +145,17 @@ describe('MoviesService', () => {
       prisma.movie.findMany.mockResolvedValue([]);
       prisma.movie.count.mockResolvedValue(0);
 
-      await service.findAll({ genreId: 28 });
+      await service.findAll({ genre: 'Action' });
 
       expect(prisma.movie.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { genres: { some: { genreId: 28 } } },
+          where: {
+            genres: {
+              some: {
+                genre: { name: { equals: 'Action', mode: 'insensitive' } },
+              },
+            },
+          },
         }),
       );
     });

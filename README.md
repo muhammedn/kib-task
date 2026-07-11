@@ -1,98 +1,93 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# TMDB Movies API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A End-to-End Restful App that syncs movies from TMDB into PostgreSQL and exposes a REST API for browsing, searching, rating, and watchlists. Built with **NestJS**, **PostgreSQL**, **Prisma**, **Redis**, and **BullMQ**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Prerequisites
 
-## Description
+- A TMDB account and API key
+- **Docker & Docker Compose**, or Node.js 20+, PostgreSQL 16, and Redis 7 for local dev
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Replace the placeholder JWT secrets in `.env` before deploying publicly.
 
-## Project setup
+## Run with Docker
 
 ```bash
-$ npm install
+cp .env.example .env
+# Set TMDB_API_KEY in .env
+
+docker-compose up --build
 ```
 
-## Compile and run the project
+- API: **http://localhost:8080**
+- Swagger: **http://localhost:8080/api/docs**
+
+On first start, migrations run and a background sync pulls genres and movies from TMDB. The movie list may be empty for a few seconds until that finishes.
+
+## Try the API
+
+Routes are Guarded with JWT. Quick path:
+
+1. `POST /auth/register` or `POST /auth/login` — copy the `accessToken`
+2. Open Swagger → **Authorize** → paste `Bearer <accessToken>`
+3. Try `GET /movies`, `GET /genres`, rate a movie, or add to watchlist
+
+Example:
+
+```
+GET /movies?search=inception&genre=Action&page=1&limit=10
+```
+
+Full endpoint list and request shapes are in Swagger at `/api/docs`.
+
+
+## Environment variables
+
+See [`.env.example`](.env.example). Docker Compose sets `DATABASE_URL` and `REDIS_URL` automatically.
+
+| Variable | Purpose |
+|----------|---------|
+| `TMDB_API_KEY` | Your TMDB API key (required) |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Token signing |
+| `TMDB_SYNC_PAGES` | Pages of popular movies on first sync (default `5`) |
+| `TMDB_SYNC_CONCURRENCY` | Parallel TMDB calls during sync (default `10`) |
+| `CACHE_TTL_SECONDS` | Redis cache TTL in seconds (default `300`) |
+
+## How it works
+
+- TMDB data is synced into **PostgreSQL** in the background — the API reads from the DB, not TMDB directly.
+- **First sync** seeds genres and popular movies. **Later syncs** only pull what changed (via TMDB's change feed).
+- Sync runs through a **BullMQ** queue (startup, manual `POST /sync/movies`, and a nightly job). HTTP handlers return immediately with `{ jobId, status: "queued" }`.
+- **Redis** caches movie lists, movie detail, and genres. Rating a movie clears that movie's cache.
+- **JWT** protects movie, genre, watchlist, and sync routes.
+
+## Why built this way
+
+- **Postgres as source of truth** — fast reads even when TMDB is slow or down.
+- **TmdbService vs SyncService** — HTTP calls and DB writes are separate, easier to test and change.
+- **BullMQ for sync** — long TMDB fetches don't block API requests.
+- **Incremental sync** — after the first import, only changed movies are updated.
+- **Cache-aside in services** — explicit cache keys per query, targeted invalidation on ratings.
+- **JWT auth** — satisfies the security nice-to-have; ratings and watchlist are tied to a user.
+
+## Testing
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run test
 ```
 
-## Run tests
+## Project structure
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
 ```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+src/
+  auth/       register, login, logout, refresh (JWT)
+  users/      user persistence
+  tmdb/       TMDB HTTP client
+  sync/       BullMQ queue, processor, sync logic
+  movies/     list, search, filter by genre, rate
+  genres/     genre listing
+  watchlist/  favorites
+  cache/      Redis cache module
+  config/     env validation + typed config
+  prisma/     Prisma client wrapper
+prisma/       schema + migrations
 ```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

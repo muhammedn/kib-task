@@ -19,7 +19,7 @@ export class MoviesService {
 
     const {
       search,
-      genreId,
+      genre,
       page = 1,
       limit = 20,
       sortBy = 'popularity',
@@ -28,7 +28,13 @@ export class MoviesService {
 
     const where: Prisma.MovieWhereInput = {
       ...(search && { title: { contains: search, mode: 'insensitive' } }),
-      ...(genreId && { genres: { some: { genreId } } }),
+      ...(genre && {
+        genres: {
+          some: {
+            genre: { name: { equals: genre, mode: 'insensitive' } },
+          },
+        },
+      }),
     };
 
     const [movies, total] = await Promise.all([

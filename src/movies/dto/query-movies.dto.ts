@@ -19,10 +19,12 @@ export class QueryMoviesDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by genre id' })
+  @ApiPropertyOptional({
+    description: 'Filter by genre name',
+  })
   @IsOptional()
-  @IsInt()
-  genreId?: number;
+  @IsString()
+  genre?: string;
 
   @ApiPropertyOptional({ default: 1, minimum: 1 })
   @IsOptional()

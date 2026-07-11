@@ -4,10 +4,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { TmdbService } from '../tmdb/tmdb.service';
-import {
-  TmdbMovie,
-  TmdbMovieDetail,
-} from '../tmdb/interfaces/tmdb.interface';
+import { TmdbMovie, TmdbMovieDetail } from '../tmdb/interfaces/tmdb.interface';
 import {
   SYNC_JOB,
   SYNC_QUEUE,
