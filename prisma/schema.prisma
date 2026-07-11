@@ -82,3 +82,10 @@ model WatchlistItem {
   @@unique([userId, movieId])
   @@index([userId])
 }
+
+model SyncState {
+  id           Int       @id @default(autoincrement())
+  key          String    @unique
+  lastSyncedAt DateTime?
+  updatedAt    DateTime  @updatedAt
+}

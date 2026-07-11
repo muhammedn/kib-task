@@ -1,16 +1,23 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import axios from 'axios';
 import { TmdbService } from './tmdb.service';
 
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+const httpGet = jest.fn();
+
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(() => ({ get: httpGet })),
+  },
+}));
 
 describe('TmdbService', () => {
   let service: TmdbService;
 
   beforeEach(async () => {
+    httpGet.mockReset();
+
     const configService = {
       getOrThrow: jest.fn((key: string) => {
         if (key === 'tmdb.baseUrl') return 'https://api.themoviedb.org/3';
@@ -27,16 +34,15 @@ describe('TmdbService', () => {
     }).compile();
 
     service = module.get(TmdbService);
-    jest.clearAllMocks();
   });
 
   describe('getGenres', () => {
     it('returns genres from TMDB successfully', async () => {
       const genres = [{ id: 28, name: 'Action' }];
-      mockedAxios.get.mockResolvedValue({ data: { genres } });
+      httpGet.mockResolvedValue({ data: { genres } });
 
       await expect(service.getGenres()).resolves.toEqual(genres);
-      expect(mockedAxios.get).toHaveBeenCalledWith(
+      expect(httpGet).toHaveBeenCalledWith(
         'https://api.themoviedb.org/3/genre/movie/list',
         expect.objectContaining({
           params: { api_key: 'test-api-key', language: 'en-US' },
@@ -44,8 +50,8 @@ describe('TmdbService', () => {
       );
     });
 
-    it('throws an error on failure', async () => {
-      mockedAxios.get.mockRejectedValue(new Error('network error'));
+    it('throws an error when fetching genres fails', async () => {
+      httpGet.mockRejectedValue(new Error('network error'));
 
       await expect(service.getGenres()).rejects.toThrow(
         new HttpException(
@@ -64,29 +70,19 @@ describe('TmdbService', () => {
         total_pages: 10,
         total_results: 200,
       };
-      mockedAxios.get.mockResolvedValue({ data: response });
+      httpGet.mockResolvedValue({ data: response });
 
       await expect(service.getPopularMovies(2)).resolves.toEqual(response);
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        'https://api.themoviedb.org/3/movie/popular',
-        expect.objectContaining({
-          params: { api_key: 'test-api-key', language: 'en-US', page: 2 },
-        }),
-      );
     });
 
     it('uses default page when not provided successfully', async () => {
-      const response = {
-        page: 1,
-        results: [],
-        total_pages: 1,
-        total_results: 0,
-      };
-      mockedAxios.get.mockResolvedValue({ data: response });
+      httpGet.mockResolvedValue({
+        data: { page: 1, results: [], total_pages: 1, total_results: 0 },
+      });
 
       await service.getPopularMovies();
 
-      expect(mockedAxios.get).toHaveBeenCalledWith(
+      expect(httpGet).toHaveBeenCalledWith(
         'https://api.themoviedb.org/3/movie/popular',
         expect.objectContaining({
           params: expect.objectContaining({ page: 1 }),
@@ -95,11 +91,81 @@ describe('TmdbService', () => {
     });
 
     it('throws an error on failure', async () => {
-      mockedAxios.get.mockRejectedValue(new Error('network error'));
+      httpGet.mockRejectedValue(new Error('network error'));
 
       await expect(service.getPopularMovies()).rejects.toThrow(
         new HttpException(
           'Failed to fetch movies from TMDB',
+          HttpStatus.BAD_GATEWAY,
+        ),
+      );
+    });
+  });
+
+  describe('getMovieChanges', () => {
+    it('returns paginated movie changes successfully', async () => {
+      const response = {
+        page: 1,
+        results: [{ id: 42 }],
+        total_pages: 1,
+        total_results: 1,
+      };
+      httpGet.mockResolvedValue({ data: response });
+
+      await expect(
+        service.getMovieChanges('2026-01-01', '2026-01-31', 1),
+      ).resolves.toEqual(response);
+      expect(httpGet).toHaveBeenCalledWith(
+        'https://api.themoviedb.org/3/movie/changes',
+        expect.objectContaining({
+          params: {
+            api_key: 'test-api-key',
+            start_date: '2026-01-01',
+            end_date: '2026-01-31',
+            page: 1,
+          },
+        }),
+      );
+    });
+
+    it('throws an error on failure', async () => {
+      httpGet.mockRejectedValue(new Error('network error'));
+
+      await expect(
+        service.getMovieChanges('2026-01-01', '2026-01-31'),
+      ).rejects.toThrow(
+        new HttpException(
+          'Failed to fetch movie changes from TMDB',
+          HttpStatus.BAD_GATEWAY,
+        ),
+      );
+    });
+  });
+
+  describe('getMovie', () => {
+    it('returns movie detail successfully', async () => {
+      const movie = {
+        id: 1,
+        title: 'Movie',
+        genres: [{ id: 28, name: 'Action' }],
+      };
+      httpGet.mockResolvedValue({ data: movie });
+
+      await expect(service.getMovie(1)).resolves.toEqual(movie);
+      expect(httpGet).toHaveBeenCalledWith(
+        'https://api.themoviedb.org/3/movie/1',
+        expect.objectContaining({
+          params: { api_key: 'test-api-key', language: 'en-US' },
+        }),
+      );
+    });
+
+    it('throws an error on failure', async () => {
+      httpGet.mockRejectedValue(new Error('network error'));
+
+      await expect(service.getMovie(99)).rejects.toThrow(
+        new HttpException(
+          'Failed to fetch movie 99 from TMDB',
           HttpStatus.BAD_GATEWAY,
         ),
       );

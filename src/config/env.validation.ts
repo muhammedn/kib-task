@@ -52,11 +52,7 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
-  TMDB_SYNC_ON_STARTUP?: string;
-
-  @IsOptional()
-  @IsString()
-  TMDB_SYNC_CRON?: string;
+  TMDB_SYNC_CONCURRENCY?: string;
 
   @IsOptional()
   @IsString()

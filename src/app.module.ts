@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { AppCacheModule } from './cache/cache.module';
 import configuration from './config/configuration';
@@ -20,7 +19,6 @@ import { WatchlistModule } from './watchlist/watchlist.module';
       load: [configuration],
       validate,
     }),
-    ScheduleModule.forRoot(),
     AppCacheModule,
     PrismaModule,
     UsersModule,

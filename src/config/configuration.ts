@@ -13,8 +13,8 @@ export default () => ({
     apiKey: process.env.TMDB_API_KEY ?? '',
     baseUrl: process.env.TMDB_BASE_URL ?? 'https://api.themoviedb.org/3',
     syncPages: parseInt(process.env.TMDB_SYNC_PAGES ?? '5', 10),
-    syncOnStartup: (process.env.TMDB_SYNC_ON_STARTUP ?? 'true') === 'true',
     syncCron: process.env.TMDB_SYNC_CRON ?? '0 3 * * *',
+    syncConcurrency: parseInt(process.env.TMDB_SYNC_CONCURRENCY ?? '10', 10),
   },
   database: {
     url: process.env.DATABASE_URL ?? '',

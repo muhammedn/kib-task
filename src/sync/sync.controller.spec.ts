@@ -4,10 +4,10 @@ import { SyncService } from './sync.service';
 
 describe('SyncController', () => {
   let controller: SyncController;
-  let syncService: { runFullSync: jest.Mock };
+  let syncService: { enqueueSync: jest.Mock };
 
   beforeEach(async () => {
-    syncService = { runFullSync: jest.fn() };
+    syncService = { enqueueSync: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SyncController],
@@ -17,11 +17,11 @@ describe('SyncController', () => {
     controller = module.get(SyncController);
   });
 
-  it('trigger sync successfully', () => {
-    const result = { genresSynced: 1, moviesSynced: 20 };
-    syncService.runFullSync.mockReturnValue(result);
+  it('triggerSync enqueues sync job', () => {
+    const result = { jobId: 'job-1', status: 'queued' as const };
+    syncService.enqueueSync.mockReturnValue(result);
 
     expect(controller.triggerSync()).toBe(result);
-    expect(syncService.runFullSync).toHaveBeenCalled();
+    expect(syncService.enqueueSync).toHaveBeenCalled();
   });
 });

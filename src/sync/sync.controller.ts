@@ -5,7 +5,12 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { SyncService } from './sync.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -15,13 +20,21 @@ export class SyncController {
   constructor(private readonly syncService: SyncService) {}
 
   @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Manually trigger a full sync',
+  @ApiOperation({ summary: 'Queue a TMDB sync job' })
+  @ApiOkResponse({
+    description: 'Sync job queued',
+    schema: {
+      type: 'object',
+      properties: {
+        jobId: { type: 'string', example: '1' },
+        status: { type: 'string', example: 'queued' },
+      },
+    },
   })
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('movies')
   triggerSync() {
-    return this.syncService.runFullSync();
+    return this.syncService.enqueueSync();
   }
 }
