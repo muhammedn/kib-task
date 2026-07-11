@@ -17,3 +17,38 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model Genre {
+  id     Int          @id
+  name   String       @unique
+  movies MovieGenre[]
+}
+
+model Movie {
+  id               Int          @id
+  title            String
+  overview         String?
+  releaseDate      DateTime?
+  posterPath       String?
+  backdropPath     String?
+  originalLanguage String?
+  popularity       Float?
+  tmdbVoteAverage  Float?
+  tmdbVoteCount    Int?
+  genres           MovieGenre[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([title])
+  @@index([popularity])
+}
+
+model MovieGenre {
+  movieId Int
+  genreId Int
+  movie   Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre   Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, genreId])
+  @@index([genreId])
+}

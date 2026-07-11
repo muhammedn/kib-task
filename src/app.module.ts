@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import configuration from './config/configuration';
 import { validate } from './config/env.validation';
+import { GenresModule } from './genres/genres.module';
+import { MoviesModule } from './movies/movies.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SyncModule } from './sync/sync.module';
+import { TmdbModule } from './tmdb/tmdb.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -13,9 +18,14 @@ import { UsersModule } from './users/users.module';
       load: [configuration],
       validate,
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,
+    TmdbModule,
+    SyncModule,
+    GenresModule,
+    MoviesModule,
   ],
   controllers: [],
   providers: [],

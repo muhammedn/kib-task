@@ -37,6 +37,26 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   JWT_REFRESH_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsString()
+  TMDB_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  TMDB_BASE_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  TMDB_SYNC_PAGES?: string;
+
+  @IsOptional()
+  @IsString()
+  TMDB_SYNC_ON_STARTUP?: string;
+
+  @IsOptional()
+  @IsString()
+  TMDB_SYNC_CRON?: string;
 }
 
 export function validate(config: Record<string, unknown>) {
