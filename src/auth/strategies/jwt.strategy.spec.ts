@@ -1,6 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { UserRole } from '../../generated/prisma/client';
 import { UsersService } from '../../users/users.service';
 import { JwtStrategy } from './jwt.strategy';
 
@@ -30,6 +31,7 @@ describe('JwtStrategy', () => {
       id: 1,
       key: 'user-key',
       email: 'test@example.com',
+      role: UserRole.ADMIN,
     });
 
     await expect(
@@ -38,6 +40,7 @@ describe('JwtStrategy', () => {
       userId: 1,
       userKey: 'user-key',
       email: 'test@example.com',
+      role: UserRole.ADMIN,
     });
   });
 

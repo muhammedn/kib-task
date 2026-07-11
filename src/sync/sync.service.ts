@@ -1,9 +1,15 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { TmdbService } from '../tmdb/tmdb.service';
+import {
+  bumpMoviesListVersion,
+  GENRES_ALL_CACHE_KEY,
+} from '../cache/cache.constants';
 import { TmdbMovie, TmdbMovieDetail } from '../tmdb/interfaces/tmdb.interface';
 import {
   SYNC_JOB,
@@ -22,6 +28,7 @@ export class SyncService implements OnModuleInit {
     private readonly tmdb: TmdbService,
     private readonly config: ConfigService,
     @InjectQueue(SYNC_QUEUE) private readonly syncQueue: Queue,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
   async onModuleInit() {
@@ -82,7 +89,13 @@ export class SyncService implements OnModuleInit {
     console.log(
       `sync complete: ${genresSynced} genres, ${moviesSynced} movies`,
     );
+    await this.invalidateCachesAfterSync();
     return { genresSynced, moviesSynced };
+  }
+
+  private async invalidateCachesAfterSync() {
+    await bumpMoviesListVersion(this.cache);
+    await this.cache.del(GENRES_ALL_CACHE_KEY);
   }
 
   private async seedPopular(): Promise<number> {

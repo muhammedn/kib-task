@@ -24,6 +24,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('User no longer exists');
     }
 
-    return { userId: user.id, userKey: user.key, email: payload.email };
+    return {
+      userId: user.id,
+      userKey: user.key,
+      email: payload.email,
+      role: user.role,
+    };
   }
 }

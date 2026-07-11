@@ -1,6 +1,10 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import {
+  bumpMoviesListVersion,
+  getMoviesListVersion,
+} from '../cache/cache.constants';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryMoviesDto } from './dto/query-movies.dto';
@@ -13,7 +17,7 @@ export class MoviesService {
   ) {}
 
   async findAll(query: QueryMoviesDto) {
-    const cacheKey = this.getListCacheKey(query);
+    const cacheKey = await this.getListCacheKey(query);
     const cached = await this.cache.get(cacheKey);
     if (cached) return cached;
 
@@ -98,6 +102,7 @@ export class MoviesService {
     });
 
     await this.cache.del(this.getDetailCacheKey(movieId));
+    await bumpMoviesListVersion(this.cache);
 
     const { average, count } = await this.getAverageRating(movieId);
     return { rating, averageRating: average, ratingsCount: count };
@@ -158,8 +163,9 @@ export class MoviesService {
     };
   }
 
-  private getListCacheKey(query: QueryMoviesDto) {
-    return `movies:list:${JSON.stringify(query)}`;
+  private async getListCacheKey(query: QueryMoviesDto) {
+    const version = await getMoviesListVersion(this.cache);
+    return `movies:list:v${version}:${JSON.stringify(query)}`;
   }
 
   private getDetailCacheKey(id: number) {

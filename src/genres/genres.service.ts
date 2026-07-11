@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
+import { GENRES_ALL_CACHE_KEY } from '../cache/cache.constants';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -22,6 +23,6 @@ export class GenresService {
   }
 
   private getCacheKey() {
-    return `genres:all`;
+    return GENRES_ALL_CACHE_KEY;
   }
 }

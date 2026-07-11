@@ -1,6 +1,11 @@
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { getQueueToken } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import {
+  GENRES_ALL_CACHE_KEY,
+  MOVIES_LIST_VERSION_KEY,
+} from '../cache/cache.constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { TmdbService } from '../tmdb/tmdb.service';
 import { SYNC_JOB, SYNC_QUEUE, SYNC_REPEAT_KEY } from './sync.constants';
@@ -30,6 +35,7 @@ describe('SyncService', () => {
     getRepeatableJobs: jest.Mock;
     removeRepeatableByKey: jest.Mock;
   };
+  let cache: { get: jest.Mock; set: jest.Mock; del: jest.Mock };
 
   const tmdbMovie = {
     id: 1,
@@ -89,6 +95,11 @@ describe('SyncService', () => {
       getRepeatableJobs: jest.fn().mockResolvedValue([]),
       removeRepeatableByKey: jest.fn().mockResolvedValue(undefined),
     };
+    cache = {
+      get: jest.fn().mockResolvedValue(1),
+      set: jest.fn().mockResolvedValue(undefined),
+      del: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -97,6 +108,7 @@ describe('SyncService', () => {
         { provide: TmdbService, useValue: tmdb },
         { provide: ConfigService, useValue: config },
         { provide: getQueueToken(SYNC_QUEUE), useValue: syncQueue },
+        { provide: CACHE_MANAGER, useValue: cache },
       ],
     }).compile();
 
@@ -225,6 +237,14 @@ describe('SyncService', () => {
       await service.runFullSync();
 
       expect(prisma.movieGenre.createMany).not.toHaveBeenCalled();
+    });
+
+    it('invalidates movie list and genre caches after sync', async () => {
+      await service.runFullSync('manual');
+
+      expect(cache.get).toHaveBeenCalledWith(MOVIES_LIST_VERSION_KEY);
+      expect(cache.set).toHaveBeenCalledWith(MOVIES_LIST_VERSION_KEY, 2);
+      expect(cache.del).toHaveBeenCalledWith(GENRES_ALL_CACHE_KEY);
     });
   });
 });

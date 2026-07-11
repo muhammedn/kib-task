@@ -1,6 +1,7 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { MOVIES_LIST_VERSION_KEY } from '../cache/cache.constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { MoviesService } from './movies.service';
 
@@ -44,6 +45,12 @@ describe('MoviesService', () => {
       },
     };
     cache = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
+    cache.get.mockImplementation((key: string) => {
+      if (key === MOVIES_LIST_VERSION_KEY) {
+        return Promise.resolve(1);
+      }
+      return Promise.resolve(undefined);
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -62,16 +69,24 @@ describe('MoviesService', () => {
         data: [],
         meta: { total: 0, page: 1, limit: 20, totalPages: 1 },
       };
-      cache.get.mockResolvedValue(cached);
+      const query = { page: 1, limit: 20 };
+      cache.get.mockImplementation((key: string) => {
+        if (key === MOVIES_LIST_VERSION_KEY) {
+          return Promise.resolve(1);
+        }
+        if (key === `movies:list:v1:${JSON.stringify(query)}`) {
+          return Promise.resolve(cached);
+        }
+        return Promise.resolve(undefined);
+      });
 
-      const result = await service.findAll({ page: 1, limit: 20 });
+      const result = await service.findAll(query);
 
       expect(result).toBe(cached);
       expect(prisma.movie.findMany).not.toHaveBeenCalled();
     });
 
     it('fetches movies and caches them successfully', async () => {
-      cache.get.mockResolvedValue(undefined);
       prisma.movie.findMany.mockResolvedValue([rawMovie]);
       prisma.movie.count.mockResolvedValue(1);
       prisma.rating.groupBy.mockResolvedValue([
@@ -94,11 +109,13 @@ describe('MoviesService', () => {
         limit: 20,
         totalPages: 1,
       });
-      expect(cache.set).toHaveBeenCalled();
+      expect(cache.set).toHaveBeenCalledWith(
+        `movies:list:v1:${JSON.stringify({ page: 1, limit: 20 })}`,
+        expect.objectContaining({ data: expect.any(Array) }),
+      );
     });
 
     it('applies search and genre filters successfully', async () => {
-      cache.get.mockResolvedValue(undefined);
       prisma.movie.findMany.mockResolvedValue([]);
       prisma.movie.count.mockResolvedValue(0);
       prisma.rating.groupBy.mockResolvedValue([]);
@@ -127,7 +144,6 @@ describe('MoviesService', () => {
     });
 
     it('applies search filter only successfully', async () => {
-      cache.get.mockResolvedValue(undefined);
       prisma.movie.findMany.mockResolvedValue([]);
       prisma.movie.count.mockResolvedValue(0);
 
@@ -141,7 +157,6 @@ describe('MoviesService', () => {
     });
 
     it('applies genre filter only successfully', async () => {
-      cache.get.mockResolvedValue(undefined);
       prisma.movie.findMany.mockResolvedValue([]);
       prisma.movie.count.mockResolvedValue(0);
 
@@ -161,7 +176,6 @@ describe('MoviesService', () => {
     });
 
     it('handles movies with zero average rating in list successfully', async () => {
-      cache.get.mockResolvedValue(undefined);
       prisma.movie.findMany.mockResolvedValue([rawMovie]);
       prisma.movie.count.mockResolvedValue(1);
       prisma.rating.groupBy.mockResolvedValue([
@@ -174,7 +188,6 @@ describe('MoviesService', () => {
     });
 
     it('handles empty movie list without rating query successfully', async () => {
-      cache.get.mockResolvedValue(undefined);
       prisma.movie.findMany.mockResolvedValue([]);
       prisma.movie.count.mockResolvedValue(0);
 
@@ -218,7 +231,7 @@ describe('MoviesService', () => {
   });
 
   describe('rateMovie', () => {
-    it('upserts rating and invalidates detail cache successfully', async () => {
+    it('upserts rating and invalidates detail and list caches successfully', async () => {
       prisma.movie.findUnique.mockResolvedValue(rawMovie);
       prisma.rating.upsert.mockResolvedValue({
         userId: 1,
@@ -238,6 +251,8 @@ describe('MoviesService', () => {
         ratingsCount: 1,
       });
       expect(cache.del).toHaveBeenCalledWith('movies:detail:1');
+      expect(cache.get).toHaveBeenCalledWith(MOVIES_LIST_VERSION_KEY);
+      expect(cache.set).toHaveBeenCalledWith(MOVIES_LIST_VERSION_KEY, 2);
     });
 
     it('returns null average when no ratings successfully', async () => {

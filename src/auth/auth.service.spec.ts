@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from '../generated/prisma/client';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 
@@ -44,6 +45,7 @@ describe('AuthService', () => {
       get: jest.fn((key: string) => {
         if (key === 'JWT_ACCESS_EXPIRES_IN') return '15m';
         if (key === 'JWT_REFRESH_EXPIRES_IN') return '7d';
+        if (key === 'admin.email') return '';
         return undefined;
       }),
     };
@@ -88,6 +90,36 @@ describe('AuthService', () => {
       expect(usersService.create).toHaveBeenCalledWith(
         'test@example.com',
         'hashed',
+        UserRole.USER,
+      );
+    });
+
+    it('registers admin when email matches ADMIN_EMAIL', async () => {
+      configService.get.mockImplementation((key: string) => {
+        if (key === 'admin.email') return 'admin@example.com';
+        if (key === 'JWT_ACCESS_EXPIRES_IN') return '15m';
+        if (key === 'JWT_REFRESH_EXPIRES_IN') return '7d';
+        return undefined;
+      });
+      usersService.findByEmail.mockResolvedValue(null);
+      usersService.create.mockResolvedValue({
+        ...mockUser,
+        email: 'admin@example.com',
+        role: UserRole.ADMIN,
+      });
+      jwtService.signAsync
+        .mockResolvedValueOnce('access-token')
+        .mockResolvedValueOnce('refresh-token');
+
+      await service.register({
+        email: 'admin@example.com',
+        password: 'password123',
+      });
+
+      expect(usersService.create).toHaveBeenCalledWith(
+        'admin@example.com',
+        'hashed',
+        UserRole.ADMIN,
       );
     });
 

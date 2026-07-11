@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
+import { AuthModule } from '../auth/auth.module';
 import { TmdbModule } from '../tmdb/tmdb.module';
 import { SYNC_QUEUE } from './sync.constants';
 import { SyncController } from './sync.controller';
@@ -9,6 +10,7 @@ import { SyncService } from './sync.service';
 
 @Module({
   imports: [
+    AuthModule,
     TmdbModule,
     BullModule.registerQueueAsync({
       name: SYNC_QUEUE,

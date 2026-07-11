@@ -6,6 +6,7 @@ import {
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from '../generated/prisma/client';
 import { UsersService } from '../users/users.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { Tokens } from './interfaces/auth.interface';
@@ -25,7 +26,16 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = await this.usersService.create(dto.email, hashedPassword);
+    const adminEmail = this.config.get<string>('admin.email')?.toLowerCase();
+    const role =
+      adminEmail && dto.email.toLowerCase() === adminEmail
+        ? UserRole.ADMIN
+        : UserRole.USER;
+    const user = await this.usersService.create(
+      dto.email,
+      hashedPassword,
+      role,
+    );
 
     return this.generateTokens(user.key, user.email);
   }

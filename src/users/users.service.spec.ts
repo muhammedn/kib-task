@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { UserRole } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from './users.service';
 
@@ -54,7 +55,19 @@ describe('UsersService', () => {
 
     await expect(service.create('a@b.com', 'hash')).resolves.toBe(user);
     expect(prisma.user.create).toHaveBeenCalledWith({
-      data: { email: 'a@b.com', password: 'hash' },
+      data: { email: 'a@b.com', password: 'hash', role: UserRole.USER },
+    });
+  });
+
+  it('create admin user successfully', async () => {
+    const user = { id: 1, email: 'admin@b.com', password: 'hash', role: UserRole.ADMIN };
+    prisma.user.create.mockResolvedValue(user);
+
+    await expect(
+      service.create('admin@b.com', 'hash', UserRole.ADMIN),
+    ).resolves.toBe(user);
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: { email: 'admin@b.com', password: 'hash', role: UserRole.ADMIN },
     });
   });
 

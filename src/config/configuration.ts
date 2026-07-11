@@ -23,4 +23,7 @@ export default () => ({
     redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
     ttl: parseInt(process.env.CACHE_TTL_SECONDS ?? '300', 10),
   },
+  admin: {
+    email: process.env.ADMIN_EMAIL ?? '',
+  },
 });

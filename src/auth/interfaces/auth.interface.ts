@@ -1,7 +1,10 @@
+import { UserRole } from '../../generated/prisma/client';
+
 export interface CurrentUserPayload {
   userId?: number;
   userKey: string;
   email: string;
+  role?: UserRole;
   refreshToken?: string;
 }
 
