@@ -10,6 +10,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { SyncModule } from './sync/sync.module';
 import { TmdbModule } from './tmdb/tmdb.module';
 import { UsersModule } from './users/users.module';
+import { WatchlistModule } from './watchlist/watchlist.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UsersModule } from './users/users.module';
     SyncModule,
     GenresModule,
     MoviesModule,
+    WatchlistModule,
   ],
   controllers: [],
   providers: [],

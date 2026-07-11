@@ -9,13 +9,15 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  key          String   @unique @default(uuid())
-  email        String   @unique
+  id           Int             @id @default(autoincrement())
+  key          String          @unique @default(uuid())
+  email        String          @unique
   password     String
   refreshToken String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  ratings      Rating[]
+  watchlist    WatchlistItem[]
 }
 
 model Genre {
@@ -25,7 +27,7 @@ model Genre {
 }
 
 model Movie {
-  id               Int          @id
+  id               Int             @id
   title            String
   overview         String?
   releaseDate      DateTime?
@@ -33,11 +35,13 @@ model Movie {
   backdropPath     String?
   originalLanguage String?
   popularity       Float?
-  tmdbVoteAverage  Float?
-  tmdbVoteCount    Int?
+  voteAverage      Float?
+  voteCount        Int?
   genres           MovieGenre[]
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  ratings          Rating[]
+  watchlistedBy    WatchlistItem[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@index([title])
   @@index([popularity])
@@ -51,4 +55,30 @@ model MovieGenre {
 
   @@id([movieId, genreId])
   @@index([genreId])
+}
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  score     Float
+  userId    Int
+  movieId   Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, movieId])
+  @@index([movieId])
+}
+
+model WatchlistItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  movieId   Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, movieId])
+  @@index([userId])
 }

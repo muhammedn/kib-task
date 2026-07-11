@@ -84,8 +84,8 @@ export class SyncService implements OnModuleInit {
           backdropPath: movie.backdrop_path,
           originalLanguage: movie.original_language,
           popularity: movie.popularity,
-          tmdbVoteAverage: movie.vote_average,
-          tmdbVoteCount: movie.vote_count,
+          voteAverage: movie.vote_average,
+          voteCount: movie.vote_count,
         },
         create: {
           id: movie.id,
@@ -96,8 +96,8 @@ export class SyncService implements OnModuleInit {
           backdropPath: movie.backdrop_path,
           originalLanguage: movie.original_language,
           popularity: movie.popularity,
-          tmdbVoteAverage: movie.vote_average,
-          tmdbVoteCount: movie.vote_count,
+          voteAverage: movie.vote_average,
+          voteCount: movie.vote_count,
         },
       });
 

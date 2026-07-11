@@ -16,8 +16,8 @@ CREATE TABLE "Movie" (
     "backdropPath" TEXT,
     "originalLanguage" TEXT,
     "popularity" DOUBLE PRECISION,
-    "tmdbVoteAverage" DOUBLE PRECISION,
-    "tmdbVoteCount" INTEGER,
+    "voteAverage" DOUBLE PRECISION,
+    "voteCount" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
