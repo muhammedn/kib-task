@@ -57,6 +57,14 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   TMDB_SYNC_CRON?: string;
+
+  @IsOptional()
+  @IsString()
+  REDIS_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  CACHE_TTL_SECONDS?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

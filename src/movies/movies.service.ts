@@ -1,13 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueryMoviesDto } from './dto/query-movies.dto';
 
 @Injectable()
 export class MoviesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+  ) {}
 
   async findAll(query: QueryMoviesDto) {
+    const cacheKey = this.getListCacheKey(query);
+    const cached = await this.cache.get(cacheKey);
+    if (cached) return cached;
+
     const {
       search,
       genreId,
@@ -36,7 +45,7 @@ export class MoviesService {
     const movieIds = movies.map((m) => m.id);
     const averages = await this.getAverageRatingsForMovies(movieIds);
 
-    return {
+    const response = {
       data: movies.map((movie) =>
         this.serializeMovie(movie, averages[movie.id]),
       ),
@@ -47,9 +56,16 @@ export class MoviesService {
         totalPages: Math.max(1, Math.ceil(total / limit)),
       },
     };
+
+    await this.cache.set(cacheKey, response);
+    return response;
   }
 
   async findOne(id: number) {
+    const cacheKey = this.getDetailCacheKey(id);
+    const cached = await this.cache.get(cacheKey);
+    if (cached) return cached;
+
     const movie = await this.prisma.movie.findUnique({
       where: { id },
       include: { genres: { include: { genre: true } } },
@@ -57,7 +73,10 @@ export class MoviesService {
     if (!movie) throw new NotFoundException(`Movie with id ${id} not found`);
 
     const averages = await this.getAverageRatingsForMovies([id]);
-    return this.serializeMovie(movie, averages[id]);
+    const result = this.serializeMovie(movie, averages[id]);
+
+    await this.cache.set(cacheKey, result);
+    return result;
   }
 
   async rateMovie(userId: number, movieId: number, score: number) {
@@ -71,6 +90,8 @@ export class MoviesService {
       update: { score },
       create: { userId, movieId, score },
     });
+
+    await this.cache.del(this.getDetailCacheKey(movieId));
 
     const { average, count } = await this.getAverageRating(movieId);
     return { rating, averageRating: average, ratingsCount: count };
@@ -129,5 +150,13 @@ export class MoviesService {
       averageUserRating: ratingAgg?.average ?? null,
       userRatingsCount: ratingAgg?.count ?? 0,
     };
+  }
+
+  private getListCacheKey(query: QueryMoviesDto) {
+    return `movies:list:${JSON.stringify(query)}`;
+  }
+
+  private getDetailCacheKey(id: number) {
+    return `movies:detail:${id}`;
   }
 }

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
+import { AppCacheModule } from './cache/cache.module';
 import configuration from './config/configuration';
 import { validate } from './config/env.validation';
 import { GenresModule } from './genres/genres.module';
@@ -20,6 +21,7 @@ import { WatchlistModule } from './watchlist/watchlist.module';
       validate,
     }),
     ScheduleModule.forRoot(),
+    AppCacheModule,
     PrismaModule,
     UsersModule,
     AuthModule,

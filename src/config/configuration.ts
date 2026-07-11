@@ -19,4 +19,8 @@ export default () => ({
   database: {
     url: process.env.DATABASE_URL ?? '',
   },
+  cache: {
+    redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
+    ttl: parseInt(process.env.CACHE_TTL_SECONDS ?? '300', 10),
+  },
 });

@@ -25,15 +25,19 @@ export class MoviesController {
     private readonly watchlistService: WatchlistService,
   ) {}
 
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'List movies',
   })
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAll(@Query() query: QueryMoviesDto) {
     return this.moviesService.findAll(query);
   }
 
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get a movie by id' })
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.moviesService.findOne(id);
